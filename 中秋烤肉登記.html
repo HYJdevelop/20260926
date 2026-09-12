@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中秋烤肉食材登記</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-deep:#141d33;
+    --sky:#1c2b4a;
+    --sky-card:#24375e;
+    --moon:#f5cf82;
+    --moon-soft:#fbe7b8;
+    --lantern:#e8703a;
+    --lantern-soft:#f0956a;
+    --text:#f3ecdc;
+    --text-dim:#b9c2d6;
+    --line:rgba(245,207,130,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans TC', sans-serif;
+    background:
+      radial-gradient(ellipse 600px 300px at 82% -5%, rgba(245,207,130,0.15), transparent 60%),
+      linear-gradient(180deg, var(--sky-deep) 0%, var(--sky) 55%, #0f1626 100%);
+    color:var(--text);
+    min-height:100vh;
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  .hero{
+    text-align:center;
+    padding:24px 0 32px;
+  }
+  .moon{
+    width:88px;height:88px;
+    margin:0 auto 18px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 32%, #fff8e4, var(--moon-soft) 45%, var(--moon) 100%);
+    box-shadow:0 0 50px 10px rgba(245,207,130,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  .hero h1{
+    font-size:26px;
+    font-weight:900;
+    margin:0 0 8px;
+    letter-spacing:0.02em;
+  }
+  .hero p{
+    color:var(--text-dim);
+    margin:0;
+    font-size:14.5px;
+    line-height:1.7;
+  }
+
+  .card{
+    background:var(--sky-card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px 20px;
+    margin-bottom:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  }
+  .card h2{
+    font-size:16px;
+    font-weight:700;
+    margin:0 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card .sub{
+    font-size:12.5px;color:var(--text-dim);margin:0 0 16px;
+  }
+  .card h2 .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--lantern);
+    box-shadow:0 0 8px var(--lantern);
+  }
+
+  .progress-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:10px;
+  }
+  .progress-row .num{font-size:22px;font-weight:900;color:var(--moon);}
+  .progress-row .label{font-size:13px;color:var(--text-dim);}
+  .bar{
+    height:8px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;border-radius:99px;
+    background:linear-gradient(90deg, var(--lantern), var(--moon));
+    transition:width 0.4s ease;
+  }
+
+  form{display:flex;flex-direction:column;gap:12px;}
+  .row{display:flex;gap:10px;}
+  input[type="text"]{
+    flex:1;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    color:var(--text);
+    font-size:15px;
+    font-family:inherit;
+    outline:none;
+    min-width:0;
+  }
+  input[type="text"]::placeholder{color:rgba(243,236,220,0.4);}
+  input[type="text"]:focus{border-color:var(--moon);}
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+  }
+  .btn-add{
+    background:linear-gradient(135deg, var(--lantern), var(--lantern-soft));
+    color:#1c1206;
+    font-weight:700;
+    font-size:15px;
+    padding:13px 18px;
+    border-radius:10px;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    white-space:nowrap;
+  }
+  .btn-add:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(232,112,58,0.35);}
+  .btn-add:active{transform:translateY(0);}
+  .btn-add:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
+
+  .btn-small{
+    background:rgba(245,207,130,0.14);
+    color:var(--moon);
+    font-weight:700;
+    font-size:13px;
+    padding:9px 14px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .btn-small:hover{background:rgba(245,207,130,0.22);}
+
+  .err{color:var(--lantern-soft);font-size:13px;min-height:16px;}
+
+  ul.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  ul.list li{
+    display:flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .avatar{
+    width:34px;height:34px;flex:0 0 34px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--moon), var(--lantern));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:14px;color:#241505;
+  }
+  .info{flex:1;min-width:0;}
+  .info .name{font-weight:700;font-size:14.5px;}
+  .info .item{font-size:13.5px;color:var(--text-dim);margin-top:2px;}
+  .del{
+    background:transparent;
+    color:var(--text-dim);
+    font-size:18px;
+    line-height:1;
+    padding:6px;
+    border-radius:8px;
+    flex:0 0 auto;
+  }
+  .del:hover{color:var(--lantern-soft);background:rgba(255,255,255,0.06);}
+
+  .claim-form{
+    display:flex;gap:8px;flex:1;min-width:0;
+  }
+  .claim-form input{padding:9px 12px;font-size:13.5px;}
+  .tag-unclaimed{color:var(--text-dim);font-size:13px;}
+
+  .empty{
+    text-align:center;color:var(--text-dim);font-size:13.5px;
+    padding:24px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="moon"></div>
+    <h1>中秋烤肉，食材登記</h1>
+    <p>先列出需要的食材，大家再認領要帶什麼。</p>
+  </div>
+
+  <div class="card">
+    <div class="progress-row">
+      <span><span class="num" id="countNum">0</span> <span class="label">/ 0 項已認領</span></span>
+    </div>
+    <div class="bar"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>新增需要的食材</h2>
+    <p class="sub">大家都可以新增，也都可以刪除</p>
+    <form id="addForm">
+      <div class="row">
+        <input type="text" id="needInput" placeholder="例如：五花肉、玉米、蝦子" maxlength="30">
+        <button type="submit" class="btn-add">加入</button>
+      </div>
+      <div class="err" id="addErr"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>食材清單</h2>
+    <ul class="list" id="list"></ul>
+    <div class="empty" id="emptyMsg" style="display:none;">還沒有項目，先新增需要的食材吧！</div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: 'AIzaSyDjUizIuZph0f2MINUtUji4dI3c6b1BivU0',
+  authDomain: 'bbq-88bd2.firebaseapp.com',
+  databaseURL: 'https://bbq-88bd2-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'bbq-88bd2',
+  storageBucket: 'bbq-88bd2.firebasestorage.app',
+  messagingSenderId: '206941577914',
+  appId: '1:206941577914:web:4e45af0fc613237e399883'
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+const itemsRef = database.ref('bbq-items');
+const listEl = document.getElementById('list');
+const emptyMsg = document.getElementById('emptyMsg');
+const countNum = document.getElementById('countNum');
+const barFill = document.getElementById('barFill');
+const countLabel = document.querySelector('.progress-row .label');
+const addForm = document.getElementById('addForm');
+const needInput = document.getElementById('needInput');
+const addErr = document.getElementById('addErr');
+
+let items = [];
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function render(){
+  listEl.innerHTML = '';
+  if(items.length === 0){
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    items.forEach((it) => {
+      const li = document.createElement('li');
+      if(it.claimedBy){
+        const initial = it.claimedBy.trim().charAt(0) || '?';
+        li.innerHTML = `
+          <div class="avatar">${initial}</div>
+          <div class="info">
+            <div class="name">${escapeHtml(it.name)}</div>
+            <div class="item">${escapeHtml(it.claimedBy)} 會帶這個</div>
+          </div>
+          <button class="btn-small" data-action="unclaim" data-id="${it.id}">取消認領</button>
+          <button class="del" title="刪除" data-action="delete" data-id="${it.id}">✕</button>
+        `;
+      } else {
+        li.innerHTML = `
+          <div class="info">
+            <div class="name">${escapeHtml(it.name)}</div>
+            <div class="tag-unclaimed">尚未有人認領</div>
+          </div>
+          <form class="claim-form" data-id="${it.id}">
+            <input type="text" placeholder="你的名字" maxlength="12">
+            <button type="submit" class="btn-small">我來帶</button>
+          </form>
+          <button class="del" title="刪除" data-action="delete" data-id="${it.id}">✕</button>
+        `;
+      }
+      listEl.appendChild(li);
+    });
+  }
+  const claimed = items.filter(it => it.claimedBy).length;
+  countNum.textContent = claimed;
+  countLabel.textContent = '/ ' + items.length + ' 項已認領';
+  const pct = items.length ? Math.round((claimed / items.length) * 100) : 0;
+  barFill.style.width = pct + '%';
+}
+
+function showError(message){
+  addErr.textContent = message;
+}
+
+function requireSignedIn(){
+  if(!auth.currentUser){
+    showError('尚未連線，請重新整理頁面');
+    return false;
+  }
+  return true;
+}
+
+function load(){
+  itemsRef.on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    items = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    render();
+  }, () => showError('讀取失敗，請確認 Firebase 設定'));
+}
+
+addForm.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  addErr.textContent = '';
+  const name = needInput.value.trim();
+  if(!name){
+    addErr.textContent = '請輸入食材名稱';
+    return;
+  }
+  if(!requireSignedIn()) return;
+  try{
+    const newItem = itemsRef.push();
+    await newItem.set({ name, claimedBy: null });
+  }catch(e){
+    showError('新增失敗，請再試一次');
+    return;
+  }
+  needInput.value = '';
+  needInput.focus();
+});
+
+listEl.addEventListener('click', async (ev) => {
+  const delBtn = ev.target.closest('[data-action="delete"]');
+  if(delBtn){
+    if(!requireSignedIn()) return;
+    const id = delBtn.getAttribute('data-id');
+    try{
+      await itemsRef.child(id).remove();
+    }catch(e){ showError('刪除失敗，請再試一次'); }
+    return;
+  }
+  const unclaimBtn = ev.target.closest('[data-action="unclaim"]');
+  if(unclaimBtn){
+    if(!requireSignedIn()) return;
+    const id = unclaimBtn.getAttribute('data-id');
+    try{
+      await itemsRef.child(id).update({ claimedBy: null });
+    }catch(e){ showError('取消認領失敗，請再試一次'); }
+    return;
+  }
+});
+
+listEl.addEventListener('submit', async (ev) => {
+  const form = ev.target.closest('.claim-form');
+  if(!form) return;
+  ev.preventDefault();
+  const id = form.getAttribute('data-id');
+  const input = form.querySelector('input');
+  const name = input.value.trim();
+  if(!name) return;
+  if(!requireSignedIn()) return;
+  try{
+    await itemsRef.child(id).update({ claimedBy: name });
+  }catch(e){ showError('認領失敗，請再試一次'); }
+});
+
+auth.signInAnonymously()
+  .then(load)
+  .catch(() => showError('Firebase 連線失敗，請確認 Web App 設定與匿名登入'));
+</script>
+</body>
+</html>
