@@ -404,12 +404,15 @@ function showAuthError(error){
 
 function showFirebaseError(error){
   const messages = {
+    'PERMISSION_DENIED': 'Firebase Rules 拒絕存取，請到 Realtime Database > Rules 貼上最新規則並按發布',
+    'database/permission-denied': 'Firebase Rules 拒絕存取，請到 Realtime Database > Rules 貼上最新規則並按發布',
     'auth/operation-not-allowed': 'Firebase 尚未開啟電子郵件／密碼登入，請到 Authentication > Sign-in method 啟用 Email/Password',
     'auth/unauthorized-domain': '目前網站網址尚未加入 Firebase 授權網域，請到 Authentication > Settings > Authorized domains 新增網址',
     'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Firebase Web App 的 API key 無效，請重新複製設定',
     'auth/network-request-failed': '網路連線失敗，請確認網路後重新整理頁面'
   };
-  showError(messages[error.code] || `Firebase 連線失敗（${error.code || '未知錯誤'}），請開啟瀏覽器主控台查看詳細訊息`);
+  const errorCode = error.code || error.message?.match(/PERMISSION_DENIED/)?.[0];
+  showError(messages[errorCode] || `Firebase 連線失敗（${errorCode || '未知錯誤'}），請開啟瀏覽器主控台查看詳細訊息`);
   console.error('Firebase error:', error);
 }
 
