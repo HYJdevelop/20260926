@@ -484,7 +484,7 @@ listEl.addEventListener('submit', async (ev) => {
   const name = currentUserName();
   try{
     await itemsRef.child(id).update({ claimedBy: name, claimedByUid: auth.currentUser.uid });
-  }catch(e){ showError('認領失敗，請再試一次'); }
+  }catch(e){ showFirebaseError(e); }
 });
 
 auth.onAuthStateChanged((user) => {
