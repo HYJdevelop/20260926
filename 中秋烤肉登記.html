@@ -334,7 +334,6 @@ function render(){
             <div class="item">${escapeHtml(it.claimedBy)} 會帶這個</div>
           </div>
           <button class="btn-small" data-action="unclaim" data-id="${it.id}">取消認領</button>
-          <button class="del" title="刪除" data-action="delete" data-id="${it.id}">✕</button>
         `;
       } else {
         li.innerHTML = `
@@ -453,6 +452,11 @@ listEl.addEventListener('click', async (ev) => {
   if(delBtn){
     if(!requireSignedIn()) return;
     const id = delBtn.getAttribute('data-id');
+    const item = items.find((entry) => entry.id === id);
+    if(item?.claimedBy){
+      showError('這項食材已有人認領，不能刪除');
+      return;
+    }
     try{
       await itemsRef.child(id).remove();
     }catch(e){ showError('刪除失敗，請再試一次'); }
