@@ -350,7 +350,7 @@ function render(){
       const li = document.createElement('li');
       if(it.claimedBy){
         const initial = it.claimedBy.trim().charAt(0) || '?';
-        const canUnclaim = it.claimedByUid === auth.currentUser?.uid;
+        const canUnclaim = it.claimedByUid === auth.currentUser?.uid || it.claimedBy === currentUserName();
         li.innerHTML = `
           <div class="avatar">${initial}</div>
           <div class="info">
@@ -517,7 +517,8 @@ listEl.addEventListener('click', async (ev) => {
     const id = unclaimBtn.getAttribute('data-id');
     try{
       const item = items.find((entry) => entry.id === id);
-      if(item?.claimedByUid !== auth.currentUser.uid){
+      const isClaimant = item?.claimedByUid === auth.currentUser.uid || item?.claimedBy === currentUserName();
+      if(!isClaimant){
         showError('只有認領人可以取消認領');
         return;
       }
