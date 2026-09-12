@@ -446,6 +446,7 @@ addForm.addEventListener('submit', async (ev) => {
     const newItem = itemsRef.push();
     await newItem.set({ name, category, claimedBy: null, claimedByUid: null });
   }catch(e){
+    addErr.textContent = '';
     showFirebaseError(e);
     return;
   }
