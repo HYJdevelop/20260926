@@ -302,6 +302,17 @@ function showError(message){
   addErr.textContent = message;
 }
 
+function showFirebaseError(error){
+  const messages = {
+    'auth/operation-not-allowed': 'Firebase 尚未開啟匿名登入，請到 Authentication > Sign-in method 啟用 Anonymous',
+    'auth/unauthorized-domain': '目前網站網址尚未加入 Firebase 授權網域，請到 Authentication > Settings > Authorized domains 新增網址',
+    'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Firebase Web App 的 API key 無效，請重新複製設定',
+    'auth/network-request-failed': '網路連線失敗，請確認網路後重新整理頁面'
+  };
+  showError(messages[error.code] || `Firebase 連線失敗（${error.code || '未知錯誤'}），請開啟瀏覽器主控台查看詳細訊息`);
+  console.error('Firebase error:', error);
+}
+
 function requireSignedIn(){
   if(!auth.currentUser){
     showError('尚未連線，請重新整理頁面');
@@ -315,7 +326,7 @@ function load(){
     const data = snapshot.val() || {};
     items = Object.entries(data).map(([id, item]) => ({ id, ...item }));
     render();
-  }, () => showError('讀取失敗，請確認 Firebase 設定'));
+  }, (error) => showFirebaseError(error));
 }
 
 addForm.addEventListener('submit', async (ev) => {
@@ -375,7 +386,7 @@ listEl.addEventListener('submit', async (ev) => {
 
 auth.signInAnonymously()
   .then(load)
-  .catch(() => showError('Firebase 連線失敗，請確認 Web App 設定與匿名登入'));
+  .catch(showFirebaseError);
 </script>
 </body>
 </html>
