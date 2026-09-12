@@ -55,6 +55,18 @@
     font-size:14.5px;
     line-height:1.7;
   }
+  .nav-link{
+    display:inline-block;
+    margin-top:12px;
+    color:var(--moon);
+    text-decoration:none;
+    font-size:13px;
+    font-weight:700;
+    background:rgba(245,207,130,0.08);
+    border:1px solid rgba(245,207,130,0.22);
+    border-radius:999px;
+    padding:7px 12px;
+  }
 
   .card{
     background:var(--sky-card);
@@ -217,6 +229,7 @@
     <div class="moon"></div>
     <h1>中秋烤肉，食材登記</h1>
     <p>先列出需要的食材，大家再認領要帶什麼。</p>
+    <a href="./log/" class="nav-link">查看系統日誌</a>
   </div>
 
   <div class="card">
@@ -289,6 +302,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
 const itemsRef = database.ref('bbq-items');
+const logsRef = database.ref('bbq-logs');
 const listEl = document.getElementById('list');
 const emptyMsg = document.getElementById('emptyMsg');
 const countNum = document.getElementById('countNum');
@@ -312,6 +326,24 @@ let categoryEditingId = null;
 function currentUserName(){
   const user = auth.currentUser;
   return user?.displayName || user?.email?.split('@')[0] || '已登入使用者';
+}
+
+function logSystemEvent(action, details = {}, actorOverride = null){
+  const user = actorOverride || auth.currentUser;
+  const entry = {
+    action,
+    details,
+    actor: user ? {
+      uid: user.uid,
+      email: user.email || null,
+      name: user.displayName || user.email?.split('@')[0] || '已登入使用者'
+    } : { uid: null, email: null, name: '訪客' },
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  return logsRef.push(entry).catch((error) => {
+    console.error('System log error:', error);
+  });
 }
 
 function escapeHtml(str){
@@ -445,6 +477,7 @@ addForm.addEventListener('submit', async (ev) => {
   try{
     const newItem = itemsRef.push();
     await newItem.set({ name, category });
+    await logSystemEvent('新增食材', { itemId: newItem.key, itemName: name, category });
   }catch(e){
     addErr.textContent = '';
     showFirebaseError(e);
@@ -469,8 +502,10 @@ authForm.addEventListener('submit', async (ev) => {
       }
       const credential = await auth.createUserWithEmailAndPassword(email, password);
       await credential.user.updateProfile({ displayName });
+      await logSystemEvent('註冊帳號', { email, displayName });
     } else {
       await auth.signInWithEmailAndPassword(email, password);
+      await logSystemEvent('登入帳號', { email });
     }
   }catch(error){
     showAuthError(error);
@@ -495,8 +530,15 @@ listEl.addEventListener('click', async (ev) => {
     if(!requireSignedIn()) return;
     const id = saveCategoryBtn.getAttribute('data-id');
     const select = listEl.querySelector(`[data-category-id="${id}"]`);
+    const item = items.find((entry) => entry.id === id);
     try{
       await itemsRef.child(id).update({ category: select.value });
+      await logSystemEvent('修改分類', {
+        itemId: id,
+        itemName: item?.name || '未知食材',
+        from: item?.category || '其他',
+        to: select.value
+      });
       categoryEditingId = null;
       render();
     }catch(e){ showFirebaseError(e); }
@@ -506,8 +548,10 @@ listEl.addEventListener('click', async (ev) => {
   if(delBtn){
     if(!requireSignedIn()) return;
     const id = delBtn.getAttribute('data-id');
+    const item = items.find((entry) => entry.id === id);
     try{
       await itemsRef.child(id).remove();
+      await logSystemEvent('刪除食材', { itemId: id, itemName: item?.name || '未知食材', category: item?.category || '其他' });
     }catch(e){ showError('刪除失敗，請再試一次'); }
     return;
   }
@@ -523,6 +567,7 @@ listEl.addEventListener('click', async (ev) => {
         return;
       }
       await itemsRef.child(id).update({ claimedBy: null, claimedByUid: null });
+      await logSystemEvent('取消認領', { itemId: id, itemName: item?.name || '未知食材', claimedBy: item?.claimedBy || '未知使用者' });
     }catch(e){ showError('取消認領失敗，請再試一次'); }
     return;
   }
@@ -535,8 +580,10 @@ listEl.addEventListener('submit', async (ev) => {
   const id = form.getAttribute('data-id');
   if(!requireSignedIn()) return;
   const name = currentUserName();
+  const item = items.find((entry) => entry.id === id);
   try{
     await itemsRef.child(id).update({ claimedBy: name, claimedByUid: auth.currentUser.uid });
+    await logSystemEvent('認領食材', { itemId: id, itemName: item?.name || '未知食材', claimedBy: name });
   }catch(e){ showFirebaseError(e); }
 });
 
@@ -557,7 +604,18 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-logoutBtn.addEventListener('click', () => auth.signOut());
+logoutBtn.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  const actor = user ? {
+    uid: user.uid,
+    email: user.email || null,
+    displayName: user.displayName || user.email?.split('@')[0] || '已登入使用者'
+  } : null;
+  await auth.signOut();
+  if (actor) {
+    await logSystemEvent('登出帳號', { email: actor.email, displayName: actor.displayName }, actor);
+  }
+});
 </script>
 </body>
 </html>
