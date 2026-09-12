@@ -472,6 +472,10 @@ listEl.addEventListener('submit', async (ev) => {
 });
 
 auth.onAuthStateChanged((user) => {
+  if(user && (user.isAnonymous || !user.email)){
+    auth.signOut();
+    return;
+  }
   if(user){
     authStatus.textContent = `已登入：${user.email}`;
     authForm.style.display = 'none';
