@@ -220,6 +220,7 @@
     <h2><span class="dot"></span>帳號登入</h2>
     <p class="sub" id="authStatus">請先註冊或登入，才能登記食材。</p>
     <form class="auth-form" id="authForm">
+      <input type="text" id="displayNameInput" placeholder="註冊時輸入你的名字" maxlength="20" autocomplete="name">
       <input type="email" id="emailInput" placeholder="電子郵件" autocomplete="email" required>
       <input type="password" id="passwordInput" placeholder="密碼至少 6 碼" autocomplete="current-password" minlength="6" required>
       <div class="auth-actions">
@@ -295,6 +296,7 @@ const needInput = document.getElementById('needInput');
 const categoryInput = document.getElementById('categoryInput');
 const addErr = document.getElementById('addErr');
 const authForm = document.getElementById('authForm');
+const displayNameInput = document.getElementById('displayNameInput');
 const emailInput = document.getElementById('emailInput');
 const passwordInput = document.getElementById('passwordInput');
 const authErr = document.getElementById('authErr');
@@ -302,6 +304,11 @@ const authStatus = document.getElementById('authStatus');
 const logoutBtn = document.getElementById('logoutBtn');
 
 let items = [];
+
+function currentUserName(){
+  const user = auth.currentUser;
+  return user?.displayName || user?.email?.split('@')[0] || '已登入使用者';
+}
 
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -337,7 +344,6 @@ function render(){
             <div class="tag-unclaimed">尚未有人認領</div>
           </div>
           <form class="claim-form" data-id="${it.id}">
-            <input type="text" placeholder="你的名字" maxlength="12">
             <button type="submit" class="btn-small">我來帶</button>
           </form>
           <button class="del" title="刪除" data-action="delete" data-id="${it.id}">✕</button>
@@ -427,7 +433,13 @@ authForm.addEventListener('submit', async (ev) => {
   const action = ev.submitter?.dataset.authAction;
   try{
     if(action === 'register'){
-      await auth.createUserWithEmailAndPassword(email, password);
+      const displayName = displayNameInput.value.trim();
+      if(!displayName){
+        authErr.textContent = '註冊時請輸入你的名字';
+        return;
+      }
+      const credential = await auth.createUserWithEmailAndPassword(email, password);
+      await credential.user.updateProfile({ displayName });
     } else {
       await auth.signInWithEmailAndPassword(email, password);
     }
@@ -462,10 +474,8 @@ listEl.addEventListener('submit', async (ev) => {
   if(!form) return;
   ev.preventDefault();
   const id = form.getAttribute('data-id');
-  const input = form.querySelector('input');
-  const name = input.value.trim();
-  if(!name) return;
   if(!requireSignedIn()) return;
+  const name = currentUserName();
   try{
     await itemsRef.child(id).update({ claimedBy: name });
   }catch(e){ showError('認領失敗，請再試一次'); }
@@ -477,7 +487,7 @@ auth.onAuthStateChanged((user) => {
     return;
   }
   if(user){
-    authStatus.textContent = `已登入：${user.email}`;
+    authStatus.textContent = `已登入：${currentUserName()}`;
     authForm.style.display = 'none';
     logoutBtn.style.display = 'block';
     load();
