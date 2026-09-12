@@ -444,7 +444,7 @@ addForm.addEventListener('submit', async (ev) => {
   if(!requireSignedIn()) return;
   try{
     const newItem = itemsRef.push();
-    await newItem.set({ name, category, claimedBy: null, claimedByUid: null });
+    await newItem.set({ name, category });
   }catch(e){
     addErr.textContent = '';
     showFirebaseError(e);
