@@ -326,6 +326,7 @@ function render(){
       const li = document.createElement('li');
       if(it.claimedBy){
         const initial = it.claimedBy.trim().charAt(0) || '?';
+        const canUnclaim = it.claimedByUid === auth.currentUser?.uid;
         li.innerHTML = `
           <div class="avatar">${initial}</div>
           <div class="info">
@@ -333,7 +334,8 @@ function render(){
             <div class="name">${escapeHtml(it.name)}</div>
             <div class="item">${escapeHtml(it.claimedBy)} 會帶這個</div>
           </div>
-          <button class="btn-small" data-action="unclaim" data-id="${it.id}">取消認領</button>
+          ${canUnclaim ? `<button class="btn-small" data-action="unclaim" data-id="${it.id}">取消認領</button>` : ''}
+          <button class="del" title="刪除" data-action="delete" data-id="${it.id}">✕</button>
         `;
       } else {
         li.innerHTML = `
@@ -415,7 +417,7 @@ addForm.addEventListener('submit', async (ev) => {
   if(!requireSignedIn()) return;
   try{
     const newItem = itemsRef.push();
-    await newItem.set({ name, category, claimedBy: null });
+    await newItem.set({ name, category, claimedBy: null, claimedByUid: null });
   }catch(e){
     showError('新增失敗，請再試一次');
     return;
@@ -452,11 +454,6 @@ listEl.addEventListener('click', async (ev) => {
   if(delBtn){
     if(!requireSignedIn()) return;
     const id = delBtn.getAttribute('data-id');
-    const item = items.find((entry) => entry.id === id);
-    if(item?.claimedBy){
-      showError('這項食材已有人認領，不能刪除');
-      return;
-    }
     try{
       await itemsRef.child(id).remove();
     }catch(e){ showError('刪除失敗，請再試一次'); }
@@ -467,7 +464,12 @@ listEl.addEventListener('click', async (ev) => {
     if(!requireSignedIn()) return;
     const id = unclaimBtn.getAttribute('data-id');
     try{
-      await itemsRef.child(id).update({ claimedBy: null });
+      const item = items.find((entry) => entry.id === id);
+      if(item?.claimedByUid !== auth.currentUser.uid){
+        showError('只有認領人可以取消認領');
+        return;
+      }
+      await itemsRef.child(id).update({ claimedBy: null, claimedByUid: null });
     }catch(e){ showError('取消認領失敗，請再試一次'); }
     return;
   }
@@ -481,7 +483,7 @@ listEl.addEventListener('submit', async (ev) => {
   if(!requireSignedIn()) return;
   const name = currentUserName();
   try{
-    await itemsRef.child(id).update({ claimedBy: name });
+    await itemsRef.child(id).update({ claimedBy: name, claimedByUid: auth.currentUser.uid });
   }catch(e){ showError('認領失敗，請再試一次'); }
 });
 
