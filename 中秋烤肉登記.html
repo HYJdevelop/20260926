@@ -163,6 +163,9 @@
   .category-row{display:flex;gap:10px;}
   .category-row select{flex:0 0 150px;}
   .category-tag{display:inline-block;color:#1c1206;background:var(--moon);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;margin-bottom:5px;}
+  .category-editor{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+  .category-editor select{width:auto;min-width:120px;padding:5px 8px;font-size:12px;}
+  .category-editor button{padding:5px 8px;font-size:12px;}
 
   .err{color:var(--lantern-soft);font-size:13px;min-height:16px;}
 
@@ -253,7 +256,7 @@
           <option value="蔬菜">蔬菜</option>
           <option value="烤肉用具">烤肉用具</option>
           <option value="其他">其他</option>
-          <option value="甜">甜</option>
+          <option value="甜點">甜點</option>
         </select>
       </div>
       <div class="err" id="addErr"></div>
@@ -304,6 +307,7 @@ const authStatus = document.getElementById('authStatus');
 const logoutBtn = document.getElementById('logoutBtn');
 
 let items = [];
+let categoryEditingId = null;
 
 function currentUserName(){
   const user = auth.currentUser;
@@ -314,6 +318,26 @@ function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function categoryLabel(category){
+  return category === '甜' ? '甜點' : (category || '其他');
+}
+
+function categoryEditor(item){
+  if(categoryEditingId === item.id){
+    const selected = categoryLabel(item.category);
+    const options = ['肉類', '蔬菜', '烤肉用具', '其他', '甜點']
+      .map((category) => `<option value="${category}"${category === selected ? ' selected' : ''}>${category}</option>`)
+      .join('');
+    return `<div class="category-editor">
+      <select data-category-id="${item.id}">${options}</select>
+      <button class="btn-small" data-action="save-category" data-id="${item.id}">儲存</button>
+      <button class="btn-small" data-action="cancel-category" data-id="${item.id}">取消</button>
+    </div>`;
+  }
+  return `<div><span class="category-tag">${escapeHtml(categoryLabel(item.category))}</span>
+    <button class="btn-small" data-action="edit-category" data-id="${item.id}">修改分類</button></div>`;
 }
 
 function render(){
@@ -330,7 +354,7 @@ function render(){
         li.innerHTML = `
           <div class="avatar">${initial}</div>
           <div class="info">
-            <div class="category-tag">${escapeHtml(it.category || '其他')}</div>
+            ${categoryEditor(it)}
             <div class="name">${escapeHtml(it.name)}</div>
             <div class="item">${escapeHtml(it.claimedBy)} 會帶這個</div>
           </div>
@@ -340,7 +364,7 @@ function render(){
       } else {
         li.innerHTML = `
           <div class="info">
-            <div class="category-tag">${escapeHtml(it.category || '其他')}</div>
+            ${categoryEditor(it)}
             <div class="name">${escapeHtml(it.name)}</div>
             <div class="tag-unclaimed">尚未有人認領</div>
           </div>
@@ -419,7 +443,7 @@ addForm.addEventListener('submit', async (ev) => {
     const newItem = itemsRef.push();
     await newItem.set({ name, category, claimedBy: null, claimedByUid: null });
   }catch(e){
-    showError('新增失敗，請再試一次');
+    showFirebaseError(e);
     return;
   }
   needInput.value = '';
@@ -450,6 +474,30 @@ authForm.addEventListener('submit', async (ev) => {
 });
 
 listEl.addEventListener('click', async (ev) => {
+  const editCategoryBtn = ev.target.closest('[data-action="edit-category"]');
+  if(editCategoryBtn){
+    categoryEditingId = editCategoryBtn.getAttribute('data-id');
+    render();
+    return;
+  }
+  const cancelCategoryBtn = ev.target.closest('[data-action="cancel-category"]');
+  if(cancelCategoryBtn){
+    categoryEditingId = null;
+    render();
+    return;
+  }
+  const saveCategoryBtn = ev.target.closest('[data-action="save-category"]');
+  if(saveCategoryBtn){
+    if(!requireSignedIn()) return;
+    const id = saveCategoryBtn.getAttribute('data-id');
+    const select = listEl.querySelector(`[data-category-id="${id}"]`);
+    try{
+      await itemsRef.child(id).update({ category: select.value });
+      categoryEditingId = null;
+      render();
+    }catch(e){ showFirebaseError(e); }
+    return;
+  }
   const delBtn = ev.target.closest('[data-action="delete"]');
   if(delBtn){
     if(!requireSignedIn()) return;
